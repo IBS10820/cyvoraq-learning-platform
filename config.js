@@ -1,0 +1,1 @@
+window.CYVORAQ_CONFIG={supabaseUrl:'https://acygyxxzutrbgbxuglns.supabase.co',supabaseKey:'sb_publishable_TML8YqclwYaZg-im2UTL-g_ts7tSwS0',masterEmail:'tigertechy1@gmail.com'};
