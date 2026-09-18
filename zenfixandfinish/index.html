@@ -31,7 +31,7 @@
       <button class="btn" id="resetPasswordBtn" type="button" style="margin-top:8px">RESET / FORGOT PASSWORD</button>
       <div id="loginError" class="login-error"></div>
     </form>
-    <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.<br><small>Build: 2026-09-18.6</small></div>
+    <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.<br><small>Build: 2026-09-18.7</small></div>
   </div>
 </section>
 
@@ -200,18 +200,40 @@ function exportJSONBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{
 function importJSONBackup(ev){const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!confirm('Replace the current live master data with this backup?'))return;state=Object.assign(defaultState(),x);ensureWallItems();queueSave();renderAll();alert('Backup imported and queued for cloud save.')}catch(e){alert('That file is not a valid Zen Fix & Finish backup.')}};r.readAsText(f)}
 function showModal(html){$('#modalRoot').innerHTML=`<div class="modal-backdrop"><div class="modal">${html}</div></div>`}function closeModal(){$('#modalRoot').innerHTML=''}
 
-async function firstTimeOwnerSetup(){
+function makeStrongPassword(){
+  const upper='ABCDEFGHJKLMNPQRSTUVWXYZ', lower='abcdefghijkmnopqrstuvwxyz', nums='23456789', sym='!@#$%';
+  const all=upper+lower+nums+sym;
+  const pick=x=>x[crypto.getRandomValues(new Uint32Array(1))[0]%x.length];
+  let p=pick(upper)+pick(lower)+pick(nums)+pick(sym);
+  for(let i=0;i<12;i++)p+=pick(all);
+  return p.split('').sort(()=>crypto.getRandomValues(new Uint32Array(1))[0]>.5*4294967295?1:-1).join('');
+}
+function firstTimeOwnerSetup(){
   if(!ensureCloudConfigured())return;
-  $('#loginError').textContent='';
-  const password=$('#loginPassword').value;
-  if(password.length<10){$('#loginError').textContent='Enter the password you want to use (at least 10 characters), then press FIRST-TIME OWNER SETUP.';return}
-  const {data,error}=await sb.auth.signUp({email:LOGIN_EMAIL,password,options:{data:{role:'owner',app:'zenfixandfinish'}}});
-  if(error){$('#loginError').textContent=error.message;return}
+  showModal('<h3>First-time owner setup</h3><p class="muted">Create the real owner account for <strong>'+LOGIN_EMAIL+'</strong>.</p><div class="field"><label>New password</label><input id="ownerSetupPassword" type="text" autocomplete="new-password" placeholder="At least 10 characters"></div><div class="field"><label>Confirm password</label><input id="ownerSetupPassword2" type="text" autocomplete="new-password" placeholder="Re-enter password"></div><div id="ownerSetupError" class="login-error"></div><div class="actions"><button class="btn" type="button" onclick="generateOwnerPassword()">Generate strong password</button><button class="btn primary" type="button" onclick="createOwnerAccount()">Create owner account</button><button class="btn" type="button" onclick="closeModal()">Cancel</button></div><p class="notice">Keep the password somewhere safe. It is not stored in the webpage.</p>');
+}
+function generateOwnerPassword(){
+  const p=makeStrongPassword();
+  $('#ownerSetupPassword').value=p;
+  $('#ownerSetupPassword2').value=p;
+  $('#ownerSetupError').textContent='Strong password generated. Copy it somewhere safe, then press Create owner account.';
+  $('#ownerSetupPassword').focus();
+  $('#ownerSetupPassword').select();
+}
+async function createOwnerAccount(){
+  if(!ensureCloudConfigured())return;
+  const p1=$('#ownerSetupPassword')?.value||'',p2=$('#ownerSetupPassword2')?.value||'';
+  const out=$('#ownerSetupError');
+  if(p1.length<10){out.textContent='Password must contain at least 10 characters.';return}
+  if(p1!==p2){out.textContent='The two passwords do not match.';return}
+  out.textContent='Creating owner account…';
+  const {data,error}=await sb.auth.signUp({email:LOGIN_EMAIL,password:p1,options:{data:{role:'owner',app:'zenfixandfinish'}}});
+  if(error){out.textContent=error.message;return}
   if(data?.session){
-    $('#loginError').textContent='Owner account created. Opening the system…';
+    closeModal();
     await enterApp();
   }else{
-    $('#loginError').textContent='Owner account created. Check zenfixandfinish@gmail.com for the Supabase confirmation email, confirm it, then sign in.';
+    out.textContent='Account created. Check '+LOGIN_EMAIL+' for the confirmation email, confirm it, then return here and sign in.';
   }
 }
 $('#setupOwnerBtn').onclick=firstTimeOwnerSetup;
