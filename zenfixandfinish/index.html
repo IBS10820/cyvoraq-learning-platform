@@ -29,7 +29,7 @@
       <button class="btn" id="resetPasswordBtn" type="button" style="margin-top:8px">RESET / FORGOT PASSWORD</button>
       <div id="loginError" class="login-error"></div>
     </form>
-    <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.</div>
+    <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.<br><small>Build: 2026-09-18.3</small></div>
   </div>
 </section>
 
@@ -197,7 +197,16 @@ sb.auth.onAuthStateChange((event,session)=>{
 
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const enteredEmail=$('#loginEmail').value.trim().toLowerCase(),password=$('#loginPassword').value;if(enteredEmail!==LOGIN_EMAIL){$('#loginError').textContent='Use '+LOGIN_EMAIL;return}const {error}=await sb.auth.signInWithPassword({email:CLOUD_AUTH_EMAIL,password});if(error){$('#loginError').textContent=error.message;return}await enterApp()});
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('#syncBtn').onclick=async()=>{await saveStateNow();await loadState()};$('#nav').onclick=e=>{const b=e.target.closest('button[data-page]');if(b)gotoPage(b.dataset.page)};
-async function enterApp(){$('#login').classList.add('hidden');$('#app').classList.remove('hidden');try{await loadState();setTimeout(requireFirstPasswordChange,150)}catch(err){console.error(err);setStatus('Cloud error',false);alert('Login succeeded, but cloud data could not be loaded. Check the account permissions or Supabase setup.')}}
+async function enterApp(){
+ $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
+ try{await loadState();setTimeout(requireFirstPasswordChange,150)}
+ catch(err){
+   console.error(err);
+   setStatus('Cloud connection error',false);
+   state=defaultState();ensureWallItems();renderAll();
+   showModal('<h3>Cloud data could not be loaded</h3><p class="muted">The app itself has loaded. This usually means the secure cloud session needs to be refreshed.</p><div class="actions"><button class="btn primary" onclick="location.reload()">Reload</button><button class="btn" onclick="closeModal()">Continue offline temporarily</button></div>');
+ }
+}
 (async()=>{const {data}=await sb.auth.getSession();if(data.session)enterApp()})();
 window.addEventListener('beforeunload',()=>{if(saveTimer)saveStateNow()});
 </script>
