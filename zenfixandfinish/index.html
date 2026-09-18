@@ -31,7 +31,7 @@
       <button class="btn" id="resetPasswordBtn" type="button" style="margin-top:8px">RESET / FORGOT PASSWORD</button>
       <div id="loginError" class="login-error"></div>
     </form>
-    <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.<br><small>Build: 2026-09-18.7</small></div>
+    <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.<br><small>Build: 2026-09-18.8</small></div>
   </div>
 </section>
 
@@ -183,10 +183,7 @@ async function changeOwnerPassword(){
  state.security=state.security||{}; state.security.passwordChanged=true; await saveStateNow();
  closeModal(); alert('Password changed successfully. Use zenfixandfinish@gmail.com with your new password next time.');
 }
-function requireFirstPasswordChange(){
- if(state.security?.passwordChanged)return;
- showModal('<h3>First login — choose your password</h3><p class="muted">Before using the system, create the password you want to use with <strong>zenfixandfinish@gmail.com</strong>.</p><div class="field"><label>New password</label><input id="newOwnerPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters"></div><div class="field"><label>Confirm new password</label><input id="confirmOwnerPassword" type="password" autocomplete="new-password" placeholder="Re-enter new password"></div><button class="btn primary" onclick="changeOwnerPassword()">Save new password & continue</button>');
-}
+function requireFirstPasswordChange(){ return; }
 function renderPage(p){if(p==='dashboard')renderDashboard();if(p==='estimate')renderEstimate();if(p==='projects')renderProjects();if(p==='quotes')renderQuotes();if(p==='invoices')renderInvoices();if(p==='accounts')renderAccounts();if(p==='settings')renderSettings()}
 function renderAll(){renderDashboard();renderEstimate();renderProjects();renderQuotes();renderInvoices();renderAccounts();renderSettings()}
 
@@ -260,7 +257,7 @@ $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();if(!ensur
 $('#logoutBtn').onclick=async()=>{if(sb)await sb.auth.signOut();location.reload()};$('#syncBtn').onclick=async()=>{if(!ensureCloudConfigured())return;await saveStateNow();await loadState()};$('#nav').onclick=e=>{const b=e.target.closest('button[data-page]');if(b)gotoPage(b.dataset.page)};
 async function enterApp(){
  $('#login').classList.add('hidden');$('#app').classList.remove('hidden');
- try{await loadState();setTimeout(requireFirstPasswordChange,150)}
+ try{await loadState();if(!state.security)state.security={};if(!state.security.passwordChanged){state.security.passwordChanged=true;queueSave()}}
  catch(err){
    console.error(err);
    setStatus('Cloud connection error',false);
