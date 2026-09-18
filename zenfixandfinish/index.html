@@ -26,6 +26,7 @@
       <div class="field"><label>Login email</label><input id="loginEmail" type="email" autocomplete="username" value="zenfixandfinish@gmail.com" readonly required></div>
       <div class="field"><label>Password</label><input id="loginPassword" type="password" autocomplete="current-password" placeholder="Password" required></div>
       <button class="btn primary" type="submit">OPEN ZENFIXANDFINISH</button>
+      <button class="btn" id="resetPasswordBtn" type="button" style="margin-top:8px">RESET / FORGOT PASSWORD</button>
       <div id="loginError" class="login-error"></div>
     </form>
     <div class="notice">Data is stored in the connected cloud account. No customer or accounting data is embedded in this webpage.</div>
@@ -177,6 +178,22 @@ function downloadAccountsExcel(){const rows=state.transactions.map(t=>({Date:t.d
 function exportJSONBackup(){const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=`zenfixandfinish-master-backup-${today()}.json`;a.click();URL.revokeObjectURL(a.href)}
 function importJSONBackup(ev){const f=ev.target.files?.[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const x=JSON.parse(r.result);if(!confirm('Replace the current live master data with this backup?'))return;state=Object.assign(defaultState(),x);ensureWallItems();queueSave();renderAll();alert('Backup imported and queued for cloud save.')}catch(e){alert('That file is not a valid Zen Fix & Finish backup.')}};r.readAsText(f)}
 function showModal(html){$('#modalRoot').innerHTML=`<div class="modal-backdrop"><div class="modal">${html}</div></div>`}function closeModal(){$('#modalRoot').innerHTML=''}
+
+async function sendPasswordReset(){
+  $('#loginError').textContent='Sending password reset…';
+  const {error}=await sb.auth.resetPasswordForEmail(CLOUD_AUTH_EMAIL,{redirectTo:location.origin+location.pathname});
+  if(error){$('#loginError').textContent=error.message;return}
+  $('#loginError').textContent='Password reset email sent to the existing secure owner account. Open that email, follow the reset link, then choose your new password.';
+}
+$('#resetPasswordBtn').onclick=sendPasswordReset;
+
+sb.auth.onAuthStateChange((event,session)=>{
+  if(event==='PASSWORD_RECOVERY'){
+    $('#login').classList.add('hidden');
+    $('#app').classList.remove('hidden');
+    setTimeout(()=>showModal('<h3>Choose a new password</h3><p class="muted">Enter the new password you want to use when signing in as <strong>zenfixandfinish@gmail.com</strong>.</p><div class="field"><label>New password</label><input id="newOwnerPassword" type="password" autocomplete="new-password" placeholder="Minimum 8 characters"></div><div class="field"><label>Confirm new password</label><input id="confirmOwnerPassword" type="password" autocomplete="new-password" placeholder="Re-enter new password"></div><button class="btn primary" onclick="changeOwnerPassword()">Save new password</button>'),100);
+  }
+});
 
 $('#loginForm').addEventListener('submit',async e=>{e.preventDefault();$('#loginError').textContent='';const enteredEmail=$('#loginEmail').value.trim().toLowerCase(),password=$('#loginPassword').value;if(enteredEmail!==LOGIN_EMAIL){$('#loginError').textContent='Use '+LOGIN_EMAIL;return}const {error}=await sb.auth.signInWithPassword({email:CLOUD_AUTH_EMAIL,password});if(error){$('#loginError').textContent=error.message;return}await enterApp()});
 $('#logoutBtn').onclick=async()=>{await sb.auth.signOut();location.reload()};$('#syncBtn').onclick=async()=>{await saveStateNow();await loadState()};$('#nav').onclick=e=>{const b=e.target.closest('button[data-page]');if(b)gotoPage(b.dataset.page)};
