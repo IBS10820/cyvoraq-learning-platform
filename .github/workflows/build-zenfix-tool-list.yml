@@ -1,0 +1,25 @@
+name: Build Zen Fix tool PDF with product images
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'zenfixandfinish/build_tool_pdf.py'
+permissions:
+  contents: read
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install reportlab pillow requests beautifulsoup4
+      - run: python zenfixandfinish/build_tool_pdf.py
+      - uses: actions/upload-artifact@v4
+        with:
+          name: zenfix-tool-list-with-product-images
+          path: |
+            zenfixandfinish/Zen_Fix_Finish_Simple_Tool_Shopping_List_2026_WITH_PRODUCT_IMAGES.pdf
+            zenfixandfinish/image-fetch-report.txt
+          if-no-files-found: error
