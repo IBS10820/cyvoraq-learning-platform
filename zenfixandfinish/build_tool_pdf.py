@@ -658,3 +658,5 @@ failed=[ROWS[i]["name"] for i,p in enumerate(fetched) if not p]
 Path("zenfixandfinish/image-fetch-report.txt").write_text("\n".join(["FAILED IMAGES:"]+failed),encoding="utf-8")
 print("PDF",OUT)
 print("FAILED",len(failed))
+
+# build trigger
